@@ -22,11 +22,24 @@ analyzeBtn.addEventListener("click", async () => {
   resultSection.classList.add("hidden");
   detectionsList.innerHTML = "";
 
+  analyzeBtn.disabled = true;
+  analyzeBtn.innerText = "Analyzing...";
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90000);
+
   try {
+    console.log("Sending image to backend:", `${API_BASE_URL}/predict`);
+
     const response = await fetch(`${API_BASE_URL}/predict`, {
       method: "POST",
-      body: formData
+      body: formData,
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
+
+    console.log("Backend response status:", response.status);
 
     if (!response.ok) {
       throw new Error(`Server error: ${response.status}`);
@@ -64,9 +77,21 @@ analyzeBtn.addEventListener("click", async () => {
     });
 
   } catch (error) {
+    clearTimeout(timeoutId);
+
     loading.classList.add("hidden");
     resultSection.classList.add("hidden");
-    alert("An error occurred while analyzing the image.");
-    console.error(error);
+
+    if (error.name === "AbortError") {
+      alert("The request took too long. Render backend is slow or the uploaded image is too large.");
+    } else {
+      alert("An error occurred while analyzing the image. Please check the browser console.");
+    }
+
+    console.error("Frontend error:", error);
+
+  } finally {
+    analyzeBtn.disabled = false;
+    analyzeBtn.innerText = "Analyze Image";
   }
 });
