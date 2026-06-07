@@ -7,6 +7,58 @@ const resultSection = document.getElementById("resultSection");
 const resultImage = document.getElementById("resultImage");
 const detectionsList = document.getElementById("detectionsList");
 
+async function resizeImageBeforeUpload(file, maxSize = 1000, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > maxSize) {
+          height = Math.round((height * maxSize) / width);
+          width = maxSize;
+        } else if (height > width && height > maxSize) {
+          width = Math.round((width * maxSize) / height);
+          height = maxSize;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Image compression failed."));
+              return;
+            }
+
+            const resizedFile = new File([blob], "resized_upload.jpg", {
+              type: "image/jpeg"
+            });
+
+            resolve(resizedFile);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+
+      img.onerror = reject;
+      img.src = event.target.result;
+    };
+
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 analyzeBtn.addEventListener("click", async () => {
   const file = imageInput.files[0];
 
@@ -14,9 +66,6 @@ analyzeBtn.addEventListener("click", async () => {
     alert("Please select or capture an image first.");
     return;
   }
-
-  const formData = new FormData();
-  formData.append("file", file);
 
   loading.classList.remove("hidden");
   resultSection.classList.add("hidden");
@@ -26,9 +75,14 @@ analyzeBtn.addEventListener("click", async () => {
   analyzeBtn.innerText = "Analyzing...";
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 90000);
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
 
   try {
+    const resizedFile = await resizeImageBeforeUpload(file, 1000, 0.75);
+
+    const formData = new FormData();
+    formData.append("file", resizedFile);
+
     console.log("Sending image to backend:", `${API_BASE_URL}/predict`);
 
     const response = await fetch(`${API_BASE_URL}/predict`, {
@@ -46,6 +100,8 @@ analyzeBtn.addEventListener("click", async () => {
     }
 
     const data = await response.json();
+
+    console.log("Processing time:", data.processing_time_seconds, "seconds");
 
     loading.classList.add("hidden");
     resultSection.classList.remove("hidden");
@@ -83,9 +139,9 @@ analyzeBtn.addEventListener("click", async () => {
     resultSection.classList.add("hidden");
 
     if (error.name === "AbortError") {
-      alert("The request took too long. Render backend is slow or the uploaded image is too large.");
+      alert("The request took too long. Please try again with a smaller image.");
     } else {
-      alert("An error occurred while analyzing the image. Please check the browser console.");
+      alert("An error occurred while analyzing the image.");
     }
 
     console.error("Frontend error:", error);
