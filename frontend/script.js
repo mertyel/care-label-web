@@ -1,3 +1,5 @@
+const API_BASE_URL = "https://care-label-api.onrender.com";
+
 const imageInput = document.getElementById("imageInput");
 const analyzeBtn = document.getElementById("analyzeBtn");
 const loading = document.getElementById("loading");
@@ -21,10 +23,14 @@ analyzeBtn.addEventListener("click", async () => {
   detectionsList.innerHTML = "";
 
   try {
-    const response = await fetch("http://127.0.0.1:8000/predict", {
+    const response = await fetch(`${API_BASE_URL}/predict`, {
       method: "POST",
       body: formData
     });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
 
     const data = await response.json();
 
@@ -42,6 +48,8 @@ analyzeBtn.addEventListener("click", async () => {
       return;
     }
 
+    detectionsList.innerHTML = "";
+
     data.detections.forEach((item, index) => {
       const card = document.createElement("div");
       card.className = "detection-card";
@@ -57,6 +65,7 @@ analyzeBtn.addEventListener("click", async () => {
 
   } catch (error) {
     loading.classList.add("hidden");
+    resultSection.classList.add("hidden");
     alert("An error occurred while analyzing the image.");
     console.error(error);
   }
