@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Care Label Detection</title>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="container">
+    <h1>Textile Care Label Detection</h1>
+    <p class="subtitle">
+      Upload or capture a garment care label image to detect washing instruction symbols.
+    </p>
+
+    <div class="card">
+      <label class="upload-label">
+        Select or Capture Image
+      </label>
+
+      <input
+        type="file"
+        id="imageInput"
+        accept="image/*"
+        capture="environment"
+      />
+
+      <button id="analyzeBtn">
+        Analyze Image
+      </button>
+    </div>
+
+    <div id="loading" class="loading hidden">
+      Analyzing image, please wait...
+    </div>
+
+    <div id="resultSection" class="result-section hidden">
+      <h2>Detection Result</h2>
+
+      <img id="resultImage" class="result-image" />
+
+      <h2>Detected Symbols</h2>
+      <div id="detectionsList" class="detections-list"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
